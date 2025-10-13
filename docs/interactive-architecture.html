@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking K8s - Arquitectura Interactiva</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+
+        .architecture-container {
+            padding: 30px;
+            position: relative;
+        }
+
+        .architecture-svg {
+            width: 100%;
+            height: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .component {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .component:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.3));
+        }
+
+        .flow-arrow {
+            stroke: #007bff;
+            stroke-width: 3;
+            marker-end: url(#arrowhead);
+            opacity: 0;
+            animation: dash 2s linear infinite;
+            stroke-dasharray: 10,5;
+        }
+
+        .flow-arrow.active {
+            opacity: 1;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -15;
+            }
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+
+        .info-panel.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .info-panel h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .info-panel .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .flow-steps {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            opacity: 1;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.2);
+        }
+
+        .step-number {
+            background: #28a745;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 4px solid;
+        }
+
+        .stat-card.frontend { border-color: #ff6b6b; }
+        .stat-card.backend { border-color: #4ecdc4; }
+        .stat-card.database { border-color: #45b7d1; }
+        .stat-card.cache { border-color: #f9ca24; }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .info-panel {
+                position: relative;
+                width: 100%;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 Banking Kubernetes Architecture</h1>
+            <p>Diagrama Interactivo de Flujo de Datos</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="showFlow('user-login')">
+                👤 Flujo de Login
+            </button>
+            <button class="btn btn-success" onclick="showFlow('balance-check')">
+                💰 Consulta de Balance
+            </button>
+            <button class="btn btn-warning" onclick="showFlow('transaction')">
+                💸 Nueva Transacción
+            </button>
+            <button class="btn btn-info" onclick="showFlow('health-check')">
+                🏥 Health Check
+            </button>
+            <button class="btn btn-danger" onclick="resetFlow()">
+                🔄 Reset
+            </button>
+        </div>
+
+        <div class="architecture-container">
+            <svg class="architecture-svg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+                <!-- Definitions for arrows and patterns -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#007bff"/>
+                    </marker>
+                    
+                    <!-- Gradients -->
+                    <linearGradient id="userGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea"/>
+                        <stop offset="100%" style="stop-color:#764ba2"/>
+                    </linearGradient>
+                    
+                    <linearGradient id="frontendGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff6b6b"/>
+                        <stop offset="100%" style="stop-color:#ee5a52"/>
+                    </linearGradient>
+                    
+                    <linearGradient id="backendGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4ecdc4"/>
+                        <stop offset="100%" style="stop-color:#44a08d"/>
+                    </linearGradient>
+                    
+                    <linearGradient id="databaseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#45b7d1"/>
+                        <stop offset="100%" style="stop-color:#96c93d"/>
+                    </linearGradient>
+                    
+                    <linearGradient id="cacheGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f9ca24"/>
+                        <stop offset="100%" style="stop-color:#f0932b"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- User/Browser -->
+                <g class="component" id="user" onclick="showInfo('user')">
+                    <rect x="50" y="50" width="150" height="100" rx="15" fill="url(#userGradient)" stroke="#333" stroke-width="2"/>
+                    <text x="125" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">👤 User Browser</text>
+                    <text x="125" y="105" text-anchor="middle" fill="white" font-size="12">banking.local</text>
+                    <text x="125" y="125" text-anchor="middle" fill="white" font-size="10">Port: 80/443</text>
+                </g>
+
+                <!-- Ingress Controller -->
+                <g class="component" id="ingress" onclick="showInfo('ingress')">
+                    <rect x="350" y="50" width="200" height="100" rx="15" fill="#6c5ce7" stroke="#333" stroke-width="2"/>
+                    <text x="450" y="80" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🚪 Nginx Ingress</text>
+                    <text x="450" y="100" text-anchor="middle" fill="white" font-size="12">Controller</text>
+                    <text x="450" y="120" text-anchor="middle" fill="white" font-size="10">Routes: / → frontend</text>
+                    <text x="450" y="135" text-anchor="middle" fill="white" font-size="10">/api → backend</text>
+                </g>
+
+                <!-- Frontend -->
+                <g class="component" id="frontend" onclick="showInfo('frontend')">
+                    <rect x="150" y="250" width="180" height="120" rx="15" fill="url(#frontendGradient)" stroke="#333" stroke-width="2"/>
+                    <text x="240" y="280" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🌐 Frontend</text>
+                    <text x="240" y="300" text-anchor="middle" fill="white" font-size="12">Nginx + HTML/JS</text>
+                    <text x="240" y="320" text-anchor="middle" fill="white" font-size="10">Port: 80</text>
+                    <text x="240" y="335" text-anchor="middle" fill="white" font-size="10">Replicas: 2</text>
+                    <text x="240" y="350" text-anchor="middle" fill="white" font-size="10">Service: NodePort</text>
+                </g>
+
+                <!-- Backend -->
+                <g class="component" id="backend" onclick="showInfo('backend')">
+                    <rect x="500" y="250" width="180" height="120" rx="15" fill="url(#backendGradient)" stroke="#333" stroke-width="2"/>
+                    <text x="590" y="280" text-anchor="middle" fill="white" font-size="14" font-weight="bold">⚡ Backend</text>
+                    <text x="590" y="300" text-anchor="middle" fill="white" font-size="12">FastAPI + Python</text>
+                    <text x="590" y="320" text-anchor="middle" fill="white" font-size="10">Port: 8000</text>
+                    <text x="590" y="335" text-anchor="middle" fill="white" font-size="10">Replicas: 2</text>
+                    <text x="590" y="350" text-anchor="middle" fill="white" font-size="10">Service: ClusterIP</text>
+                </g>
+
+                <!-- PostgreSQL -->
+                <g class="component" id="database" onclick="showInfo('database')">
+                    <rect x="300" y="500" width="180" height="120" rx="15" fill="url(#databaseGradient)" stroke="#333" stroke-width="2"/>
+                    <text x="390" y="530" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🗃️ PostgreSQL</text>
+                    <text x="390" y="550" text-anchor="middle" fill="white" font-size="12">Primary Database</text>
+                    <text x="390" y="570" text-anchor="middle" fill="white" font-size="10">Port: 5432</text>
+                    <text x="390" y="585" text-anchor="middle" fill="white" font-size="10">DB: banking_db</text>
+                    <text x="390" y="600" text-anchor="middle" fill="white" font-size="10">Service: ClusterIP</text>
+                </g>
+
+                <!-- Redis -->
+                <g class="component" id="cache" onclick="showInfo('cache')">
+                    <rect x="650" y="500" width="180" height="120" rx="15" fill="url(#cacheGradient)" stroke="#333" stroke-width="2"/>
+                    <text x="740" y="530" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🚀 Redis</text>
+                    <text x="740" y="550" text-anchor="middle" fill="white" font-size="12">Cache & Sessions</text>
+                    <text x="740" y="570" text-anchor="middle" fill="white" font-size="10">Port: 6379</text>
+                    <text x="740" y="585" text-anchor="middle" fill="white" font-size="10">Memory: 256MB</text>
+                    <text x="740" y="600" text-anchor="middle" fill="white" font-size="10">Service: ClusterIP</text>
+                </g>
+
+                <!-- Flow Arrows -->
+                <line class="flow-arrow" id="arrow-1" x1="200" y1="100" x2="350" y2="100"/>
+                <line class="flow-arrow" id="arrow-2" x1="450" y1="150" x2="240" y2="250"/>
+                <line class="flow-arrow" id="arrow-3" x1="330" y1="310" x2="500" y2="310"/>
+                <line class="flow-arrow" id="arrow-4" x1="590" y1="370" x2="390" y2="500"/>
+                <line class="flow-arrow" id="arrow-5" x1="590" y1="370" x2="740" y2="500"/>
+                
+                <!-- Bidirectional arrows -->
+                <line class="flow-arrow" id="arrow-back-3" x1="500" y1="320" x2="330" y2="320"/>
+                <line class="flow-arrow" id="arrow-back-4" x1="380" y1="500" x2="580" y2="370"/>
+                <line class="flow-arrow" id="arrow-back-5" x1="730" y1="500" x2="600" y2="370"/>
+
+                <!-- Data flow indicators -->
+                <g id="flow-indicators">
+                    <circle class="pulse" cx="125" cy="100" r="5" fill="#007bff" opacity="0"/>
+                    <circle class="pulse" cx="450" cy="100" r="5" fill="#007bff" opacity="0"/>
+                    <circle class="pulse" cx="240" cy="310" r="5" fill="#007bff" opacity="0"/>
+                    <circle class="pulse" cx="590" cy="310" r="5" fill="#007bff" opacity="0"/>
+                    <circle class="pulse" cx="390" cy="560" r="5" fill="#007bff" opacity="0"/>
+                    <circle class="pulse" cx="740" cy="560" r="5" fill="#007bff" opacity="0"/>
+                </g>
+            </svg>
+
+            <div class="info-panel" id="info-panel">
+                <h3 id="info-title">Información del Componente</h3>
+                <div id="info-content"></div>
+            </div>
+        </div>
+
+        <div class="flow-steps" id="flow-steps" style="display: none;">
+            <h3>📊 Flujo de Datos Actual</h3>
+            <div id="steps-container"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card frontend">
+                <div class="stat-value">2</div>
+                <div>Frontend Replicas</div>
+                <small>Nginx + HTML/JS</small>
+            </div>
+            <div class="stat-card backend">
+                <div class="stat-value">2</div>
+                <div>Backend Replicas</div>
+                <small>FastAPI + Python</small>
+            </div>
+            <div class="stat-card database">
+                <div class="stat-value">1</div>
+                <div>Database Instance</div>
+                <small>PostgreSQL 15</small>
+            </div>
+            <div class="stat-card cache">
+                <div class="stat-value">256MB</div>
+                <div>Redis Memory</div>
+                <small>Cache & Sessions</small>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #667eea;"></div>
+                <span>Usuario/Navegador</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6c5ce7;"></div>
+                <span>Ingress Controller</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6b6b;"></div>
+                <span>Frontend (Nginx)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ecdc4;"></div>
+                <span>Backend (FastAPI)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #45b7d1;"></div>
+                <span>PostgreSQL Database</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f9ca24;"></div>
+                <span>Redis Cache</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Información detallada de cada componente
+        const componentInfo = {
+            user: {
+                title: '👤 Usuario/Navegador',
+                content: `
+                    <div class="metric"><span>URL:</span><span>banking.local</span></div>
+                    <div class="metric"><span>Protocolo:</span><span>HTTP/HTTPS</span></div>
+                    <div class="metric"><span>Puerto:</span><span>80/443</span></div>
+                    <div class="metric"><span>Método:</span><span>GET/POST</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Punto de entrada del usuario. Navegador web que accede a la aplicación bancaria.
+                    </p>
+                `
+            },
+            ingress: {
+                title: '🚪 Nginx Ingress Controller',
+                content: `
+                    <div class="metric"><span>Tipo:</span><span>nginx</span></div>
+                    <div class="metric"><span>Host:</span><span>banking.local</span></div>
+                    <div class="metric"><span>Rutas:</span><span>/ y /api</span></div>
+                    <div class="metric"><span>Backend:</span><span>2 servicios</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Enruta el tráfico: / → frontend:80, /api → backend:8000
+                    </p>
+                `
+            },
+            frontend: {
+                title: '🌐 Frontend Service',
+                content: `
+                    <div class="metric"><span>Imagen:</span><span>nginx:1.25-alpine</span></div>
+                    <div class="metric"><span>Puerto:</span><span>80</span></div>
+                    <div class="metric"><span>Replicas:</span><span>2</span></div>
+                    <div class="metric"><span>Tipo:</span><span>NodePort</span></div>
+                    <div class="metric"><span>CPU:</span><span>100m-200m</span></div>
+                    <div class="metric"><span>Memoria:</span><span>128Mi-256Mi</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Interfaz web con HTML, CSS, JavaScript. Sirve la aplicación bancaria.
+                    </p>
+                `
+            },
+            backend: {
+                title: '⚡ Backend API Service',
+                content: `
+                    <div class="metric"><span>Framework:</span><span>FastAPI</span></div>
+                    <div class="metric"><span>Puerto:</span><span>8000</span></div>
+                    <div class="metric"><span>Replicas:</span><span>2</span></div>
+                    <div class="metric"><span>Tipo:</span><span>ClusterIP</span></div>
+                    <div class="metric"><span>CPU:</span><span>200m-500m</span></div>
+                    <div class="metric"><span>Memoria:</span><span>256Mi-512Mi</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        API REST con endpoints de autenticación, cuentas y transacciones.
+                    </p>
+                `
+            },
+            database: {
+                title: '🗃️ PostgreSQL Database',
+                content: `
+                    <div class="metric"><span>Versión:</span><span>PostgreSQL 15</span></div>
+                    <div class="metric"><span>Puerto:</span><span>5432</span></div>
+                    <div class="metric"><span>Base de datos:</span><span>banking_db</span></div>
+                    <div class="metric"><span>Usuario:</span><span>banking_user</span></div>
+                    <div class="metric"><span>Tablas:</span><span>users, accounts, transactions</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Base de datos principal con información de usuarios, cuentas y transacciones.
+                    </p>
+                `
+            },
+            cache: {
+                title: '🚀 Redis Cache',
+                content: `
+                    <div class="metric"><span>Versión:</span><span>Redis 7</span></div>
+                    <div class="metric"><span>Puerto:</span><span>6379</span></div>
+                    <div class="metric"><span>Memoria:</span><span>256MB</span></div>
+                    <div class="metric"><span>Política:</span><span>allkeys-lru</span></div>
+                    <div class="metric"><span>Persistencia:</span><span>AOF habilitado</span></div>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        Cache en memoria para sesiones de usuario y datos temporales.
+                    </p>
+                `
+            }
+        };
+
+        // Flujos de datos predefinidos
+        const flows = {
+            'user-login': {
+                title: 'Flujo de Login de Usuario',
+                steps: [
+                    { component: 'user', text: 'Usuario ingresa credenciales en banking.local/login', duration: 1000 },
+                    { component: 'ingress', text: 'Ingress enruta POST /api/auth/login → backend', duration: 1000 },
+                    { component: 'backend', text: 'Backend valida credenciales', duration: 1000 },
+                    { component: 'database', text: 'PostgreSQL busca usuario en tabla users', duration: 1000 },
+                    { component: 'cache', text: 'Redis guarda sesión JWT con TTL 30min', duration: 1000 },
+                    { component: 'backend', text: 'Backend retorna JWT token', duration: 1000 },
+                    { component: 'frontend', text: 'Frontend guarda token y redirige a dashboard', duration: 1000 }
+                ],
+                arrows: ['arrow-1', 'arrow-3', 'arrow-4', 'arrow-5', 'arrow-back-4', 'arrow-back-3']
+            },
+            'balance-check': {
+                title: 'Consulta de Balance',
+                steps: [
+                    { component: 'user', text: 'Usuario solicita ver balance de cuentas', duration: 1000 },
+                    { component: 'frontend', text: 'Frontend envía GET /api/accounts con JWT', duration: 1000 },
+                    { component: 'backend', text: 'Backend verifica JWT token', duration: 1000 },
+                    { component: 'cache', text: 'Redis valida sesión activa', duration: 1000 },
+                    { component: 'database', text: 'PostgreSQL consulta tabla accounts por user_id', duration: 1000 },
+                    { component: 'backend', text: 'Backend formatea respuesta JSON', duration: 1000 },
+                    { component: 'frontend', text: 'Frontend muestra balance en UI', duration: 1000 }
+                ],
+                arrows: ['arrow-3', 'arrow-5', 'arrow-4', 'arrow-back-4', 'arrow-back-5', 'arrow-back-3']
+            },
+            'transaction': {
+                title: 'Nueva Transacción',
+                steps: [
+                    { component: 'user', text: 'Usuario inicia transferencia entre cuentas', duration: 1000 },
+                    { component: 'frontend', text: 'Frontend envía POST /api/transactions', duration: 1000 },
+                    { component: 'backend', text: 'Backend inicia transacción ACID', duration: 1000 },
+                    { component: 'database', text: 'PostgreSQL actualiza balances atomicamente', duration: 1500 },
+                    { component: 'database', text: 'PostgreSQL inserta registro en transactions', duration: 1000 },
+                    { component: 'cache', text: 'Redis invalida cache de balances', duration: 800 },
+                    { component: 'frontend', text: 'Frontend confirma transacción exitosa', duration: 1000 }
+                ],
+                arrows: ['arrow-3', 'arrow-4', 'arrow-5', 'arrow-back-4', 'arrow-back-3']
+            },
+            'health-check': {
+                title: 'Health Check del Sistema',
+                steps: [
+                    { component: 'backend', text: 'Kubernetes ejecuta health check', duration: 800 },
+                    { component: 'database', text: 'Test: SELECT 1 en PostgreSQL', duration: 800 },
+                    { component: 'cache', text: 'Test: PING en Redis', duration: 800 },
+                    { component: 'backend', text: 'Respuesta: {"status": "healthy"}', duration: 800 }
+                ],
+                arrows: ['arrow-4', 'arrow-5', 'arrow-back-4', 'arrow-back-5']
+            }
+        };
+
+        let currentFlow = null;
+        let currentStep = 0;
+
+        function showInfo(componentId) {
+            const info = componentInfo[componentId];
+            if (info) {
+                document.getElementById('info-title').textContent = info.title;
+                document.getElementById('info-content').innerHTML = info.content;
+                document.getElementById('info-panel').classList.add('show');
+            }
+        }
+
+        function showFlow(flowId) {
+            resetFlow();
+            currentFlow = flows[flowId];
+            currentStep = 0;
+            
+            document.getElementById('flow-steps').style.display = 'block';
+            document.querySelector('#flow-steps h3').textContent = '📊 ' + currentFlow.title;
+            
+            // Crear los pasos
+            const stepsContainer = document.getElementById('steps-container');
+            stepsContainer.innerHTML = '';
+            currentFlow.steps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'step';
+                stepDiv.innerHTML = `
+                    <div class="step-number">${index + 1}</div>
+                    <div>${step.text}</div>
+                `;
+                stepsContainer.appendChild(stepDiv);
+            });
+            
+            // Iniciar animación
+            animateFlow();
+        }
+
+        function animateFlow() {
+            if (currentStep >= currentFlow.steps.length) {
+                setTimeout(resetFlow, 2000);
+                return;
+            }
+
+            const step = currentFlow.steps[currentStep];
+            
+            // Activar paso actual
+            const steps = document.querySelectorAll('.step');
+            steps[currentStep].classList.add('active');
+            
+            // Highlighting del componente
+            highlightComponent(step.component);
+            
+            // Activar flechas relevantes
+            if (currentFlow.arrows) {
+                currentFlow.arrows.forEach(arrowId => {
+                    const arrow = document.getElementById(arrowId);
+                    if (arrow) arrow.classList.add('active');
+                });
+            }
+            
+            currentStep++;
+            setTimeout(animateFlow, step.duration);
+        }
+
+        function highlightComponent(componentId) {
+            // Remover highlight previo
+            document.querySelectorAll('.component').forEach(comp => {
+                comp.style.filter = '';
+            });
+            
+            // Highlight componente actual
+            const component = document.getElementById(componentId);
+            if (component) {
+                component.style.filter = 'drop-shadow(0 0 15px #007bff)';
+            }
+        }
+
+        function resetFlow() {
+            currentFlow = null;
+            currentStep = 0;
+            
+            document.getElementById('flow-steps').style.display = 'none';
+            document.getElementById('info-panel').classList.remove('show');
+            
+            // Remover todas las animaciones activas
+            document.querySelectorAll('.flow-arrow').forEach(arrow => {
+                arrow.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.component').forEach(comp => {
+                comp.style.filter = '';
+            });
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animación inicial sutil
+            setInterval(() => {
+                if (!currentFlow) {
+                    const indicators = document.querySelectorAll('#flow-indicators circle');
+                    indicators.forEach((indicator, index) => {
+                        setTimeout(() => {
+                            indicator.style.opacity = '1';
+                            setTimeout(() => {
+                                indicator.style.opacity = '0';
+                            }, 500);
+                        }, index * 200);
+                    });
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
