@@ -66,6 +66,7 @@ banking-k8s-infrastructure/
 ## 🎯 Estado Actual del Proyecto
 
 **✅ COMPLETADO - Entorno de Desarrollo:**
+
 - Aplicación bancaria completa funcionando en Minikube
 - Frontend accesible en `http://banking.local`
 - Backend API con endpoints de salud y transacciones
@@ -75,6 +76,7 @@ banking-k8s-infrastructure/
 - Todos los manifiestos de Kubernetes operativos
 
 **⚙️ DISPONIBLE - Infraestructura AWS:**
+
 - Configuración de Terraform para AWS EKS
 - Scripts preparados para despliegue en la nube
 - VPC, subnets, security groups definidos
