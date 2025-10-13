@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏦 Banking Digital - Secure Banking Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Cargando Plataforma Bancaria...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-university"></i>
+                <h1>Banking Digital</h1>
+            </div>
+            <nav class="nav" id="mainNav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active" data-section="dashboard">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a></li>
+                    <li><a href="#accounts" class="nav-link" data-section="accounts">
+                        <i class="fas fa-credit-card"></i> Cuentas
+                    </a></li>
+                    <li><a href="#transactions" class="nav-link" data-section="transactions">
+                        <i class="fas fa-exchange-alt"></i> Transferencias
+                    </a></li>
+                    <li><a href="#history" class="nav-link" data-section="history">
+                        <i class="fas fa-history"></i> Historial
+                    </a></li>
+                    <li><a href="#profile" class="nav-link" data-section="profile">
+                        <i class="fas fa-user"></i> Perfil
+                    </a></li>
+                </ul>
+            </nav>
+            <div class="user-menu">
+                <div class="user-info">
+                    <span id="userName">Juan Pérez</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <button id="logoutBtn" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Dashboard Financiero</h2>
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+
+                <!-- Balance Cards -->
+                <div class="balance-grid">
+                    <div class="balance-card primary">
+                        <div class="card-header">
+                            <h3>Saldo Total</h3>
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="amount" id="totalBalance">$0.00</div>
+                        <div class="change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            +2.5% desde el mes pasado
+                        </div>
+                    </div>
+
+                    <div class="balance-card">
+                        <div class="card-header">
+                            <h3>Cuenta Corriente</h3>
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="amount" id="checkingBalance">$0.00</div>
+                        <div class="account-number">****1234</div>
+                    </div>
+
+                    <div class="balance-card">
+                        <div class="card-header">
+                            <h3>Cuenta Ahorros</h3>
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                        <div class="amount" id="savingsBalance">$0.00</div>
+                        <div class="account-number">****5678</div>
+                    </div>
+
+                    <div class="balance-card">
+                        <div class="card-header">
+                            <h3>Tarjeta Crédito</h3>
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="amount credit" id="creditBalance">-$0.00</div>
+                        <div class="credit-limit">Límite: $5,000</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Acciones Rápidas</h3>
+                    <div class="actions-grid">
+                        <button class="action-btn" data-action="transfer">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Transferir</span>
+                        </button>
+                        <button class="action-btn" data-action="pay">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Pagar Servicios</span>
+                        </button>
+                        <button class="action-btn" data-action="deposit">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Depositar</span>
+                        </button>
+                        <button class="action-btn" data-action="withdraw">
+                            <i class="fas fa-minus-circle"></i>
+                            <span>Retirar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="recent-transactions">
+                    <h3>Transacciones Recientes</h3>
+                    <div id="recentTransactionsList" class="transactions-list">
+                        <!-- Transactions will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accounts Section -->
+        <section id="accounts" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-credit-card"></i> Mis Cuentas</h2>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nueva Cuenta
+                    </button>
+                </div>
+                
+                <div id="accountsList" class="accounts-grid">
+                    <!-- Accounts will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Transactions Section -->
+        <section id="transactions" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-exchange-alt"></i> Nueva Transferencia</h2>
+                </div>
+
+                <div class="transaction-form-container">
+                    <form id="transactionForm" class="transaction-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fromAccount">Cuenta Origen</label>
+                                <select id="fromAccount" required>
+                                    <option value="">Seleccionar cuenta</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="toAccount">Cuenta Destino</label>
+                                <input type="text" id="toAccount" placeholder="Número de cuenta o email" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="amount">Monto</label>
+                                <div class="amount-input">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionType">Tipo</label>
+                                <select id="transactionType" required>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="payment">Pago</option>
+                                    <option value="deposit">Depósito</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Descripción</label>
+                            <input type="text" id="description" placeholder="Concepto de la transferencia">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Enviar Transferencia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="history" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> Historial de Transacciones</h2>
+                    <div class="filters">
+                        <select id="periodFilter">
+                            <option value="7">Últimos 7 días</option>
+                            <option value="30">Último mes</option>
+                            <option value="90">Últimos 3 meses</option>
+                            <option value="365">Último año</option>
+                        </select>
+                        <input type="text" id="searchFilter" placeholder="Buscar transacciones...">
+                    </div>
+                </div>
+
+                <div id="transactionHistory" class="transaction-history">
+                    <!-- Transaction history will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-user"></i> Mi Perfil</h2>
+                </div>
+
+                <div class="profile-container">
+                    <div class="profile-info">
+                        <div class="avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <h3 id="profileName">Juan Pérez</h3>
+                        <p id="profileEmail">juan.perez@email.com</p>
+                    </div>
+
+                    <div class="profile-settings">
+                        <h4>Configuración de Seguridad</h4>
+                        <div class="setting-item">
+                            <span>Autenticación de dos factores</span>
+                            <label class="switch">
+                                <input type="checkbox" id="twoFactorAuth">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <span>Notificaciones por email</span>
+                            <label class="switch">
+                                <input type="checkbox" id="emailNotifications" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal for confirmations -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirmar Transacción</h3>
+                <button class="close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelModal">Cancelar</button>
+                <button class="btn btn-primary" id="confirmModal">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
