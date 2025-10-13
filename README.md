@@ -3,7 +3,7 @@
 [![Infrastructure](https://img.shields.io/badge/Infrastructure-Terraform-purple)](https://terraform.io)
 [![Container](https://img.shields.io/badge/Container-Docker-blue)](https://docker.com)
 [![Orchestration](https://img.shields.io/badge/Orchestration-Kubernetes-blue)](https://kubernetes.io)
-[![Cloud](https://img.shields.io/badge/Cloud-AWS%20EKS-orange)](https://aws.amazon.com/eks/)
+[![Development](https://img.shields.io/badge/Development-Minikube-green)](https://minikube.sigs.k8s.io/)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI-green)](https://fastapi.tiangolo.com)
 [![Frontend](https://img.shields.io/badge/Frontend-HTML%2FJS-red)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 
@@ -11,25 +11,28 @@
 
 Este proyecto implementa una **infraestructura completa de banca digital** utilizando las mejores prácticas de DevOps e Infraestructura como Código. Incluye:
 
-- **Infraestructura AWS EKS** con Terraform
+- **Entorno de desarrollo** con Minikube (preparado para AWS EKS)
 - **Aplicación bancaria** con FastAPI backend y frontend web
 - **Despliegue automático** en Kubernetes
 - **Servicios críticos** para aplicaciones bancarias
-- **Seguridad y monitoreo** incorporados
+- **Infraestructura como Código** con Terraform (listo para producción)
 
 ## 🏗️ Arquitectura
 
+### Entorno de Desarrollo (Minikube)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                           Internet                              │
+│                      localhost / minikube                      │
 └─────────────────────┬───────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────┐
-│                 Application Load Balancer                      │
+│                  Nginx Ingress Controller                     │
+│                    (banking.local)                            │
 └─────────────────────┬───────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────┐
-│                   EKS Cluster (VPC)                           │
+│                 Minikube Cluster                              │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐│
 │  │   Frontend   │ │   Backend    │ │       Databases          ││
 │  │   (Nginx)    │ │   (FastAPI)  │ │  ┌─────────┐ ┌────────┐  ││
@@ -41,22 +44,63 @@ Este proyecto implementa una **infraestructura completa de banca digital** utili
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Producción (AWS EKS - Configuración disponible)
+
+_La infraestructura de Terraform está lista para despliegue en AWS EKS cuando sea necesario._
+
 ## 📁 Estructura del Proyecto
 
 ```
 banking-k8s-infrastructure/
-├── terraform/                 # Infraestructura como Código
-├── app/backend/              # Aplicación FastAPI
-├── app/frontend/             # Aplicación web
+├── terraform/                 # Infraestructura como Código (AWS EKS)
+├── app/
+│   ├── backend/              # Aplicación FastAPI
+│   └── frontend/             # Aplicación web Nginx
 ├── k8s/                      # Manifiestos de Kubernetes
 ├── scripts/                  # Scripts de automatización
 ├── Makefile                  # Comandos simplificados
+├── QUICKSTART.md             # Guía de inicio rápido
 └── README.md                # Esta documentación
 ```
+
+## 🎯 Estado Actual del Proyecto
+
+**✅ COMPLETADO - Entorno de Desarrollo:**
+- Aplicación bancaria completa funcionando en Minikube
+- Frontend accesible en `http://banking.local`
+- Backend API con endpoints de salud y transacciones
+- Base de datos PostgreSQL configurada
+- Redis para caché y sesiones
+- Ingress controller configurado
+- Todos los manifiestos de Kubernetes operativos
+
+**⚙️ DISPONIBLE - Infraestructura AWS:**
+- Configuración de Terraform para AWS EKS
+- Scripts preparados para despliegue en la nube
+- VPC, subnets, security groups definidos
+- Configuración IAM y networking lista
 
 ## 🚀 Guía de Despliegue
 
 ### Prerrequisitos
+
+**Para desarrollo local (Minikube):**
+
+```bash
+# Minikube
+minikube version
+
+# kubectl
+kubectl version --client
+
+# Docker Desktop
+docker --version
+
+# Make
+make --version
+```
+
+**Para producción (AWS EKS) - Opcional:**
 
 ```bash
 # AWS CLI
@@ -65,40 +109,58 @@ aws --version
 # Terraform
 terraform --version
 
-# kubectl
-kubectl version --client
-
 # Helm
 helm version
-
-# Docker
-docker --version
 ```
 
 ### Comandos Rápidos
+
+**Despliegue en Minikube (Desarrollo):**
+
+```bash
+# 1. Hacer ejecutables los scripts
+chmod +x scripts/*.sh
+
+# 2. Despliegue completo de desarrollo
+make setup-dev
+
+# 3. Acceder a la aplicación
+# Frontend: http://banking.local
+# API: http://banking.local/api
+
+# 4. Ver estado de los pods
+kubectl get pods -n banking-app
+```
+
+**Para AWS EKS (Producción) - Futuro:**
 
 ```bash
 # 1. Configurar credenciales AWS
 aws configure
 
-# 2. Hacer ejecutables los scripts
-chmod +x scripts/*.sh
+# 2. Despliegue de infraestructura
+make setup-aws
 
-# 3. Despliegue completo de desarrollo
-make dev-setup
-
-# 4. Ver información de la aplicación
-make docs
+# 3. Despliegue de aplicación
+make deploy-app
 ```
 
 ## 🛡️ Seguridad Implementada
 
-- ✅ **VPC privada** con subnets públicas y privadas
-- ✅ **Security Groups** restrictivos por servicio
-- ✅ **IAM Roles** con permisos mínimos (IRSA)
-- ✅ **Encriptación** en tránsito y en reposo
-- ✅ **KMS** para gestión de claves
+**Entorno de Desarrollo:**
+
 - ✅ **Network Policies** de Kubernetes
+- ✅ **Ingress Controller** con configuración segura
+- ✅ **Contenedores** con usuarios no privilegiados
+- ✅ **Health Checks** y startup probes
+
+**Preparado para Producción (AWS):**
+
+- ⚙️ **VPC privada** con subnets públicas y privadas
+- ⚙️ **Security Groups** restrictivos por servicio
+- ⚙️ **IAM Roles** con permisos mínimos (IRSA)
+- ⚙️ **Encriptación** en tránsito y en reposo
+- ⚙️ **KMS** para gestión de claves
 
 ## 🔧 Operaciones Comunes
 
@@ -135,12 +197,34 @@ kubectl logs -f deployment/banking-backend -n banking-app
 - **Usuario**: demo_user
 - **Contraseña**: demo_password
 
-### Tests en Cluster
+### Acceso a la Aplicación
+
+**Método Principal (Ingress):**
 
 ```bash
-# Port forward para testing local
+# Iniciar túnel de minikube (si no está activo)
+minikube tunnel
+
+# Acceder via navegador
+open http://banking.local
+```
+
+**Método Alternativo (Port Forward):**
+
+```bash
+# Port forward para testing directo
 kubectl port-forward service/banking-backend 8000:8000 -n banking-app
 kubectl port-forward service/banking-frontend 8080:80 -n banking-app
+
+# Acceder vía localhost
+open http://localhost:8080
+```
+
+**Método NodePort:**
+
+```bash
+# Obtener URL del servicio
+minikube service banking-frontend -n banking-app --url
 ```
 
 ## 📞 Soporte
