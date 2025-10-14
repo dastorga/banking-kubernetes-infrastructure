@@ -1,0 +1,130 @@
+# Terraform Variables Configuration - Banking EKS Infrastructure
+# Copy this file to terraform.tfvars and customize the values
+
+# ======================
+# AWS Configuration
+# ======================
+aws_region = "us-west-2"
+environment = "dev"  # Options: dev, staging, prod
+
+# ======================
+# VPC and Networking
+# ======================
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+# DNS settings
+enable_dns_hostnames = true
+enable_dns_support = true
+
+# ======================
+# EKS Cluster Configuration
+# ======================
+kubernetes_version = "1.28"
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]  # Restrict this in production
+
+# ======================
+# EKS Node Groups
+# ======================
+node_instance_types = ["t3.medium", "t3.large"]
+node_disk_size = 50  # GB
+node_desired_size = 3
+node_max_size = 10
+node_min_size = 1
+
+# ======================
+# RDS PostgreSQL Configuration
+# ======================
+db_instance_class = "db.t3.micro"           # For production: db.t3.small or larger
+db_allocated_storage = 20                   # GB
+db_max_allocated_storage = 100              # GB (auto-scaling limit)
+db_engine_version = "15.4"
+db_name = "banking"
+db_username = "banking_admin"
+
+# ======================
+# ElastiCache Redis Configuration
+# ======================
+redis_node_type = "cache.t3.micro"          # For production: cache.t3.small or larger
+redis_num_cache_nodes = 1                   # For production: 3 for HA
+redis_engine_version = "7.0"
+
+# ======================
+# Monitoring and Alerting
+# ======================
+alert_email = ""  # Add your email for alerts: "admin@yourcompany.com"
+
+# ======================
+# Tags (Optional - additional tags)
+# ======================
+additional_tags = {
+  "CostCenter" = "Banking-IT"
+  "Owner"      = "DevOps-Team"
+  "Project"    = "Banking-Platform"
+}
+
+# ======================
+# Feature Flags
+# ======================
+enable_fargate = true
+enable_monitoring = true
+enable_vpc_flow_logs = true
+enable_rds_replica = false  # Set to true for production
+
+# ======================
+# Security Configuration
+# ======================
+# Restrict SSH access to bastion host (use your IP range)
+bastion_allowed_cidrs = ["0.0.0.0/0"]  # Change this to your IP: ["1.2.3.4/32"]
+
+# ======================
+# Performance Configuration
+# ======================
+# EBS volume types and encryption
+ebs_volume_type = "gp3"
+ebs_encrypted = true
+
+# RDS performance insights
+rds_performance_insights_enabled = true
+rds_monitoring_interval = 60
+
+# ElastiCache backup settings
+redis_snapshot_retention_limit = 3
+redis_snapshot_window = "03:00-05:00"
+
+# ======================
+# Cost Optimization
+# ======================
+# Enable spot instances for non-critical workloads
+enable_spot_instances = false  # Set to true for cost savings (dev/staging)
+spot_instance_types = ["t3.medium", "t3.large", "m5.large"]
+
+# ======================
+# Environment-Specific Overrides
+# ======================
+
+# Development Environment
+# Uncomment and modify for development
+# db_instance_class = "db.t3.micro"
+# redis_node_type = "cache.t3.micro"
+# node_desired_size = 1
+# node_max_size = 3
+# enable_rds_replica = false
+
+# Staging Environment
+# Uncomment and modify for staging
+# db_instance_class = "db.t3.small"
+# redis_node_type = "cache.t3.small"
+# node_desired_size = 2
+# node_max_size = 5
+# enable_rds_replica = true
+
+# Production Environment
+# Uncomment and modify for production
+# db_instance_class = "db.t3.medium"
+# redis_node_type = "cache.t3.medium"
+# redis_num_cache_nodes = 3
+# node_desired_size = 3
+# node_max_size = 10
+# enable_rds_replica = true
+# cluster_endpoint_public_access_cidrs = ["10.0.0.0/8"]  # Internal only
