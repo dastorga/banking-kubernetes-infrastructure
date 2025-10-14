@@ -45,7 +45,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 EXPOSE 80
 
 # Labels for better container management
-LABEL maintainer="DevOps Team <devops@banking.com>"
+LABEL maintainer="DevOps Team"
 LABEL version="1.0"
 LABEL description="Banking Application Frontend - Nginx with static files"
 
