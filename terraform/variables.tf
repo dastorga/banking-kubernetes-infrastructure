@@ -141,7 +141,7 @@ variable "log_retention_days" {
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
-  default     = "1.28"
+  default     = "1.30"
 }
 
 variable "cluster_endpoint_public_access_cidrs" {

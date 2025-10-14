@@ -9,7 +9,7 @@ Esta infraestructura de Terraform crea un cluster EKS completo en AWS para la ap
 1. **EKS Cluster**
 
    - Control plane totalmente gestionado
-   - Versión de Kubernetes: 1.28
+   - Versión de Kubernetes: 1.30
    - Logging habilitado para auditoría
    - Encriptación de secretos con KMS
 
@@ -98,7 +98,7 @@ vpc_cidr = "10.0.0.0/16"
 availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
 
 # EKS Configuration
-kubernetes_version = "1.28"
+kubernetes_version = "1.30"
 node_instance_types = ["t3.medium", "t3.large"]
 node_desired_size = 3
 node_min_size = 1
