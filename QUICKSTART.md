@@ -139,11 +139,62 @@ kubectl get pods -n banking-app
 kubectl describe pod <pod-name> -n banking-app
 ```
 
-## 📊 Monitoreo
+## � Ver el Flujo de Datos en Tiempo Real
+
+### 🎬 **Demo Súper Simple (1 comando)**
+
+```bash
+# Ver cómo viajan los datos desde el frontend hasta los pods
+make demo-flow
+```
+
+Este comando te mostrará:
+
+1. ✅ Estado de todos los pods
+2. 🌐 URL del frontend
+3. 📊 Logs en tiempo real
+4. 🧪 Peticiones de prueba
+5. 📈 Estadísticas de Redis y PostgreSQL
+
+### 📊 **Comandos de Monitoreo Rápido**
+
+```bash
+# Ver logs de todos los componentes a la vez
+make watch-logs
+
+# Hacer una petición de prueba y ver el resultado
+make test-flow
+
+# Ver solo el estado actual
+kubectl get pods -n banking-app
+```
+
+### 🎯 **Ejemplo Manual Paso a Paso**
+
+Si quieres ver el flujo paso a paso en terminales separados:
+
+```bash
+# Terminal 1: Ver logs del frontend
+kubectl logs -f deployment/banking-frontend -n banking-app
+
+# Terminal 2: Ver logs del backend
+kubectl logs -f deployment/banking-backend -n banking-app
+
+# Terminal 3: Hacer peticiones
+FRONTEND_URL=$(minikube service banking-frontend -n banking-app --url)
+curl $FRONTEND_URL/api/health
+```
+
+**¡Así verás cómo los datos viajan:**
+📱 **curl** → 🌐 **Nginx** → ⚙️ **FastAPI** → 🗄️ **PostgreSQL/Redis**
+
+## �📊 Monitoreo
 
 - **Kubernetes Dashboard:** `make minikube-dashboard`
 - **Application Logs:** `make logs`
 - **Resource Usage:** `kubectl top pods -n banking-app`
+- **🆕 Demo Flow:** `make demo-flow`
+- **🆕 Watch Logs:** `make watch-logs`
 
 ## 🆘 Ayuda
 

@@ -240,5 +240,29 @@ docker-down: ## Stop Docker Compose services
 docker-logs: ## Show Docker Compose logs
 	@docker-compose logs -f
 
+# Demo and monitoring targets
+.PHONY: demo-flow
+demo-flow: ## 🎬 Demo simple: ver flujo de datos en tiempo real
+	@echo "$(YELLOW)🎬 Iniciando demo del flujo de datos...$(NC)"
+	@chmod +x scripts/demo-simple-flow.sh
+	@./scripts/demo-simple-flow.sh
+
+.PHONY: watch-logs
+watch-logs: ## 📊 Ver logs de todos los componentes en tiempo real
+	@echo "$(BLUE)📊 Monitoreando logs en tiempo real (Ctrl+C para salir)...$(NC)"
+	@echo "$(YELLOW)Frontend logs:$(NC)"
+	@kubectl logs -f deployment/banking-frontend -n $(NAMESPACE) --tail=3 &
+	@echo "$(YELLOW)Backend logs:$(NC)" 
+	@kubectl logs -f deployment/banking-backend -n $(NAMESPACE) --tail=3 &
+	@wait
+
+.PHONY: test-flow
+test-flow: ## 🧪 Hacer peticiones de prueba y ver el flujo
+	@echo "$(GREEN)🧪 Haciendo peticiones de prueba...$(NC)"
+	@FRONTEND_URL=$$(minikube service banking-frontend -n $(NAMESPACE) --url); \
+	echo "Enviando request a: $$FRONTEND_URL/api/health"; \
+	curl -s "$$FRONTEND_URL/api/health" | head -c 100; \
+	echo ""; echo "$(GREEN)✅ Request completado$(NC)"
+
 # Default target
 .DEFAULT_GOAL := help
