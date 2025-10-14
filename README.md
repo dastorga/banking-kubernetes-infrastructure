@@ -239,7 +239,7 @@ Para dudas o problemas:
 
 ---
 
-**⚠️ IMPORTANTE**: Este es un ejemplo educativo. Para uso en producción:
+**⚠️ IMPORTANTE**: Este es un ejemplo practico/desafio SRE. Para uso en producción:
 
 - Cambia todas las contraseñas y secrets
 - Configura certificados SSL válidos
