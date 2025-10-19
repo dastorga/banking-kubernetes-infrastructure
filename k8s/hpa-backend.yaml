@@ -1,0 +1,49 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: banking-backend-hpa
+  namespace: banking-app
+  labels:
+    app: banking-backend
+    tier: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banking-backend
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300 # 5 minutes before scaling down
+      policies:
+        - type: Percent
+          value: 25 # Scale down max 25% of pods at once
+          periodSeconds: 60
+        - type: Pods
+          value: 1 # Or max 1 pod at once
+          periodSeconds: 60
+      selectPolicy: Min # Use the most conservative policy
+    scaleUp:
+      stabilizationWindowSeconds: 60 # 1 minute before scaling up
+      policies:
+        - type: Percent
+          value: 50 # Scale up max 50% more pods
+          periodSeconds: 60
+        - type: Pods
+          value: 2 # Or max 2 pods at once
+          periodSeconds: 60
+      selectPolicy: Max # Use the most aggressive policy

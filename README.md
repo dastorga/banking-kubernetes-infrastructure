@@ -157,7 +157,6 @@ banking-k8s-infrastructure/
 - ✅ **ElastiCache Redis** con cluster mode
 - ✅ **IAM roles** con IRSA (IAM Roles for Service Accounts)
 - ✅ **Security Groups** actualizados y optimizados
-- ✅ **Cost optimization** ~$100/month (Fargate removido)
 
 ### 🔧 **CONFIGURACIÓN TÉCNICA:**
 
