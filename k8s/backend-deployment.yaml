@@ -19,7 +19,7 @@ metadata:
     app: banking-backend
     tier: backend
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: banking-backend

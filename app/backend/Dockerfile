@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY main.py .
 
 # Create necessary directories
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
