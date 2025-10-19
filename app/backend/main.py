@@ -50,14 +50,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Trusted host middleware - disabled for development/Kubernetes
-# Note: TrustedHostMiddleware doesn't support IP wildcards like "10.*"
-# In production, configure with specific domains or disable for internal services
-# app.add_middleware(
-#     TrustedHostMiddleware,
-#     allowed_hosts=["localhost", "*.banking.example.com"]
-# )
-
 # Configuration
 class Config:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost/bankingdb")

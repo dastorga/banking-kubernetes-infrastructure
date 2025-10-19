@@ -144,39 +144,6 @@ resource "aws_security_group" "elasticache" {
   })
 }
 
-# Fargate Pods Security Group (OPTIONAL - only if using Fargate)
-# resource "aws_security_group" "fargate_pods" {
-#   name        = "${local.cluster_name}-fargate-pods-sg"
-#   description = "Security group for Fargate pods"
-#   vpc_id      = aws_vpc.banking_vpc.id
-#
-#   ingress {
-#     description = "Pod to pod communication"
-#     from_port   = 0
-#     to_port     = 65535
-#     protocol    = "tcp"
-#     self        = true
-#   }
-#
-#   ingress {
-#     description     = "From ALB"
-#     from_port       = 0
-#     to_port         = 65535
-#     protocol        = "tcp"
-#     security_groups = [aws_security_group.alb.id]
-#   }
-#
-#   egress {
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-#
-#   tags = merge(local.common_tags, {
-#     Name = "${local.cluster_name}-fargate-pods-sg"
-#   })
-# }
 
 # Application Load Balancer Security Group
 resource "aws_security_group" "alb" {

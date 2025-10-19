@@ -170,7 +170,7 @@ class BankingApp {
         this.currentUser = {
             id: 1,
             name: 'Juan Pérez',
-            email: 'juan.perez@email.com'
+            email: 'juan.perez@gmail.com'
         };
 
         // Mock accounts
