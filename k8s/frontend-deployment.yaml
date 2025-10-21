@@ -92,7 +92,7 @@ spec:
     spec:
       containers:
         - name: banking-frontend
-          image: banking-frontend:latest
+          image: banking-frontend:logging
           imagePullPolicy: Never # Use local image in Minikube
           ports:
             - containerPort: 80

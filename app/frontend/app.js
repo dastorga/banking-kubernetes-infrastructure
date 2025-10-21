@@ -373,20 +373,73 @@ class BankingApp {
         }
     }
 
-    handleQuickAction(action) {
+    async handleQuickAction(action) {
+        console.log(`🎯 Acción rápida seleccionada: ${action}`);
+        
         switch (action) {
             case 'transfer':
                 this.navigateToSection('transactions');
                 break;
             case 'pay':
-                this.showToast('Funcionalidad de pagos próximamente', 'warning');
+                await this.quickTransaction('withdrawal', 25.00, 'Pago de servicios');
                 break;
             case 'deposit':
-                this.showToast('Funcionalidad de depósitos próximamente', 'warning');
+                await this.quickTransaction('deposit', 500.00, 'Depósito rápido de demo');
                 break;
             case 'withdraw':
-                this.showToast('Funcionalidad de retiros próximamente', 'warning');
+                await this.quickTransaction('withdrawal', 100.00, 'Retiro de efectivo');
                 break;
+        }
+    }
+
+    async quickTransaction(type, amount, description) {
+        console.log(`⚡ Ejecutando transacción rápida: ${type} por $${amount}`);
+        
+        try {
+            const transactionData = {
+                amount: amount,
+                type: type,
+                description: description,
+                account_id: 'demo_account_001'
+            };
+
+            console.log('📤 Enviando transacción rápida al backend:', transactionData);
+            
+            const response = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(transactionData)
+            });
+
+            const result = await response.json();
+            console.log('📥 Resultado de transacción rápida:', result);
+
+            if (!response.ok) {
+                throw new Error(result.detail || 'Error en transacción rápida');
+            }
+
+            // Actualizar balance en la interfaz
+            if (result.new_balance !== undefined) {
+                const balanceElement = document.getElementById('totalBalance');
+                if (balanceElement) {
+                    balanceElement.textContent = `$${result.new_balance.toFixed(2)}`;
+                }
+            }
+
+            // Mostrar notificación de éxito
+            this.showToast(
+                `${type === 'deposit' ? 'Depósito' : 'Retiro'} de $${amount} procesado exitosamente. ID: ${result.transaction_id}`,
+                'success'
+            );
+
+            // Actualizar dashboard
+            await this.updateDashboard();
+            
+        } catch (error) {
+            console.error('❌ Error en transacción rápida:', error);
+            this.showToast(`Error: ${error.message}`, 'error');
         }
     }
 
@@ -468,39 +521,73 @@ class BankingApp {
 
     async processTransaction(transaction) {
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('🏦 Iniciando proceso de transacción:', transaction);
+            
+            // Preparar datos para la API
+            const transactionData = {
+                amount: parseFloat(transaction.amount),
+                type: transaction.type || 'transfer',
+                description: `${transaction.description} - ${transaction.toAccount}`,
+                account_id: transaction.fromAccount || 'default_account'
+            };
 
-            // Update local data (in a real app, this would come from the server)
-            const account = this.accounts.find(acc => acc.id == transaction.fromAccount);
-            if (account) {
-                account.balance -= transaction.amount;
+            console.log('📤 Enviando datos al backend:', transactionData);
+            
+            // Llamar a la API del backend para procesar la transacción
+            const response = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(transactionData)
+            });
+
+            const result = await response.json();
+            console.log('📥 Respuesta del backend:', result);
+
+            if (!response.ok) {
+                throw new Error(result.detail || 'Error procesando transacción');
             }
 
-            // Add to transactions
+            // Actualizar balance local
+            const account = this.accounts.find(acc => acc.id == transaction.fromAccount);
+            if (account && result.new_balance !== undefined) {
+                account.balance = result.new_balance;
+            }
+
+            // Agregar transacción al historial local
             const newTransaction = {
-                id: this.transactions.length + 1,
-                type: transaction.type,
-                description: `${transaction.description} - ${transaction.toAccount}`,
-                amount: -transaction.amount,
-                date: new Date(),
-                account: account.name,
-                category: 'expense'
+                id: result.transaction_id || this.transactions.length + 1,
+                type: result.type,
+                description: result.description,
+                amount: result.type === 'deposit' ? result.amount : -result.amount,
+                date: new Date(result.timestamp || Date.now()),
+                account: account ? account.name : 'Cuenta Principal',
+                category: result.type === 'deposit' ? 'income' : 'expense',
+                status: result.status || 'completed'
             };
 
             this.transactions.unshift(newTransaction);
 
-            // Update dashboard
+            // Actualizar dashboard
             await this.updateDashboard();
 
-            // Clear form
+            // Limpiar formulario
             document.getElementById('transactionForm').reset();
 
-            this.showToast('Transferencia realizada exitosamente', 'success');
+            this.showToast(`Transacción ${result.type} por $${result.amount} procesada exitosamente`, 'success');
+            
+            // Log adicional para seguimiento
+            console.log('✅ Transacción completada:', {
+                id: result.transaction_id,
+                amount: result.amount,
+                type: result.type,
+                new_balance: result.new_balance
+            });
             
         } catch (error) {
-            console.error('Error processing transaction:', error);
-            this.showToast('Error procesando la transferencia', 'error');
+            console.error('❌ Error procesando transacción:', error);
+            this.showToast(`Error procesando la transacción: ${error.message}`, 'error');
         }
     }
 

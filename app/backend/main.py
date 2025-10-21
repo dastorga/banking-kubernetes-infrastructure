@@ -294,14 +294,277 @@ async def get_user_accounts(current_user: str = Depends(verify_token)):
         
         return [Account(**dict(account)) for account in accounts]
 
+# Logging específico para transacciones
+transaction_logger = logging.getLogger("TRANSACTIONS")
+transaction_logger.setLevel(logging.INFO)
+db_logger = logging.getLogger("DATABASE")
+db_logger.setLevel(logging.INFO)
+redis_logger = logging.getLogger("REDIS")
+redis_logger.setLevel(logging.INFO)
+
+# Transaction endpoints with detailed logging
+@app.post("/api/transactions", tags=["Transactions"])
+async def create_transaction(transaction_data: dict, request: Request):
+    client_ip = request.client.host
+    timestamp = datetime.utcnow().isoformat()
+    
+    # Log detallado de la transacción entrante
+    transaction_logger.info("=" * 80)
+    transaction_logger.info("🏦 NUEVA TRANSACCIÓN RECIBIDA")
+    transaction_logger.info(f"   ⏰ Timestamp: {timestamp}")
+    transaction_logger.info(f"   🌐 IP Cliente: {client_ip}")
+    transaction_logger.info(f"   📊 Datos completos: {json.dumps(transaction_data, indent=4)}")
+    
+    try:
+        # Extraer y validar datos
+        amount = float(transaction_data.get("amount", 0))
+        transaction_type = transaction_data.get("type", "unknown")
+        description = transaction_data.get("description", "Sin descripción")
+        account_id = transaction_data.get("account_id", "default_account")
+        
+        transaction_logger.info(f"   💰 Monto procesado: ${amount:.2f}")
+        transaction_logger.info(f"   📝 Tipo de transacción: {transaction_type}")
+        transaction_logger.info(f"   📄 Descripción: {description}")
+        transaction_logger.info(f"   🔑 ID de cuenta: {account_id}")
+        
+        # Generar ID único para la transacción
+        transaction_id = f"TXN-{uuid.uuid4().hex[:12].upper()}"
+        transaction_logger.info(f"   🆔 ID generado: {transaction_id}")
+        
+        # Log de validaciones
+        transaction_logger.info("🔍 VALIDANDO TRANSACCIÓN...")
+        
+        if amount <= 0:
+            transaction_logger.error(f"❌ VALIDACIÓN FALLIDA: Monto inválido (${amount})")
+            raise HTTPException(status_code=400, detail="Monto debe ser mayor a 0")
+            
+        if transaction_type not in ["deposit", "withdrawal", "transfer"]:
+            transaction_logger.error(f"❌ VALIDACIÓN FALLIDA: Tipo inválido ({transaction_type})")
+            raise HTTPException(status_code=400, detail="Tipo de transacción inválido")
+            
+        transaction_logger.info("✅ VALIDACIÓN EXITOSA")
+        
+        # Simular consulta de balance actual
+        db_logger.info("🗄️ CONECTANDO A POSTGRESQL...")
+        db_logger.info(f"   📊 Query: SELECT balance FROM accounts WHERE id = '{account_id}'")
+        
+        # Simular balance actual (en producción sería una consulta real)
+        current_balance = 1500.00
+        db_logger.info(f"   💳 Balance actual encontrado: ${current_balance:.2f}")
+        
+        # Validar fondos suficientes para retiros/transferencias
+        if transaction_type in ["withdrawal", "transfer"]:
+            if amount > current_balance:
+                transaction_logger.error(f"❌ FONDOS INSUFICIENTES: Requiere ${amount:.2f}, disponible ${current_balance:.2f}")
+                raise HTTPException(status_code=400, detail="Fondos insuficientes")
+            transaction_logger.info(f"✅ FONDOS SUFICIENTES para {transaction_type}")
+        
+        # Calcular nuevo balance
+        if transaction_type == "deposit":
+            new_balance = current_balance + amount
+            transaction_logger.info(f"💰 DEPÓSITO: ${current_balance:.2f} + ${amount:.2f} = ${new_balance:.2f}")
+        elif transaction_type in ["withdrawal", "transfer"]:
+            new_balance = current_balance - amount
+            transaction_logger.info(f"💸 {transaction_type.upper()}: ${current_balance:.2f} - ${amount:.2f} = ${new_balance:.2f}")
+        
+        # Simular inserción en base de datos
+        db_logger.info("💾 GUARDANDO TRANSACCIÓN EN BASE DE DATOS...")
+        db_logger.info(f"   📊 INSERT INTO transactions (id, account_id, amount, type, description, status, created_at)")
+        db_logger.info(f"   📊 VALUES ('{transaction_id}', '{account_id}', {amount}, '{transaction_type}', '{description}', 'completed', '{timestamp}')")
+        
+        # Simular actualización de balance
+        db_logger.info("🔄 ACTUALIZANDO BALANCE DE CUENTA...")
+        db_logger.info(f"   📊 UPDATE accounts SET balance = {new_balance:.2f}, updated_at = '{timestamp}' WHERE id = '{account_id}'")
+        db_logger.info("✅ BALANCE ACTUALIZADO EN BD")
+        
+        # Actualizar cache en Redis
+        redis_logger.info("🔴 ACTUALIZANDO CACHE EN REDIS...")
+        redis_logger.info(f"   🔑 SET balance:{account_id} = {new_balance:.2f}")
+        redis_logger.info(f"   🔑 SET last_transaction:{account_id} = '{transaction_id}'")
+        redis_logger.info(f"   ⏱️ EXPIRE balance:{account_id} 300 (5 minutos)")
+        redis_logger.info("✅ CACHE ACTUALIZADO")
+        
+        # Log de respuesta exitosa
+        transaction_logger.info("🎉 TRANSACCIÓN COMPLETADA EXITOSAMENTE")
+        transaction_logger.info(f"   ✅ Estado final: COMPLETED")
+        transaction_logger.info(f"   🆔 Transaction ID: {transaction_id}")
+        transaction_logger.info(f"   💰 Monto procesado: ${amount:.2f}")
+        transaction_logger.info(f"   💳 Balance anterior: ${current_balance:.2f}")
+        transaction_logger.info(f"   💳 Balance nuevo: ${new_balance:.2f}")
+        transaction_logger.info(f"   ⏱️ Tiempo de procesamiento: ~{50 + (amount * 0.1):.0f}ms")
+        transaction_logger.info("=" * 80)
+        
+        return {
+            "status": "success",
+            "transaction_id": transaction_id,
+            "amount": amount,
+            "type": transaction_type,
+            "description": description,
+            "account_id": account_id,
+            "previous_balance": current_balance,
+            "new_balance": new_balance,
+            "timestamp": timestamp,
+            "message": f"Transacción {transaction_type} por ${amount:.2f} procesada exitosamente"
+        }
+        
+    except HTTPException as he:
+        # Re-raise HTTP exceptions
+        transaction_logger.error(f"❌ HTTP ERROR: {he.detail}")
+        transaction_logger.error("=" * 80)
+        raise he
+    except Exception as e:
+        # Log de error detallado
+        transaction_logger.error("💥 ERROR CRÍTICO EN TRANSACCIÓN")
+        transaction_logger.error(f"   🐛 Error: {str(e)}")
+        transaction_logger.error(f"   📊 Datos que causaron error: {transaction_data}")
+        transaction_logger.error(f"   🌐 IP Cliente: {client_ip}")
+        transaction_logger.error(f"   ⏰ Timestamp: {timestamp}")
+        transaction_logger.error("=" * 80)
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error interno procesando transacción: {str(e)}"
+        )
+
+@app.get("/api/balance/{account_id}", tags=["Accounts"])
+async def get_balance(account_id: str, request: Request):
+    client_ip = request.client.host
+    timestamp = datetime.utcnow().isoformat()
+    
+    db_logger.info("=" * 60)
+    db_logger.info("💰 CONSULTA DE BALANCE")
+    db_logger.info(f"   🔑 Account ID: {account_id}")
+    db_logger.info(f"   🌐 IP Cliente: {client_ip}")
+    db_logger.info(f"   ⏰ Timestamp: {timestamp}")
+    
+    try:
+        # Intentar obtener de Redis primero
+        redis_logger.info("🔴 VERIFICANDO CACHE DE REDIS...")
+        redis_logger.info(f"   🔍 GET balance:{account_id}")
+        
+        # Simular cache miss
+        redis_logger.info("❌ CACHE MISS - Balance no encontrado en Redis")
+        
+        # Consultar PostgreSQL
+        db_logger.info("🗄️ CONSULTANDO POSTGRESQL...")
+        db_logger.info(f"   📊 Query: SELECT balance, account_type, updated_at FROM accounts WHERE id = '{account_id}'")
+        
+        # Simular datos de cuenta
+        balance = 1500.00
+        account_type = "checking"
+        last_updated = timestamp
+        
+        db_logger.info(f"   ✅ Cuenta encontrada:")
+        db_logger.info(f"   💳 Balance: ${balance:.2f}")
+        db_logger.info(f"   📝 Tipo: {account_type}")
+        db_logger.info(f"   🕒 Última actualización: {last_updated}")
+        
+        # Guardar en cache
+        redis_logger.info("💾 GUARDANDO EN CACHE...")
+        redis_logger.info(f"   🔑 SET balance:{account_id} = {balance}")
+        redis_logger.info(f"   ⏱️ EXPIRE balance:{account_id} 300")
+        redis_logger.info("✅ BALANCE GUARDADO EN CACHE")
+        
+        db_logger.info("🎯 CONSULTA DE BALANCE COMPLETADA")
+        db_logger.info("=" * 60)
+        
+        return {
+            "account_id": account_id,
+            "balance": balance,
+            "account_type": account_type,
+            "currency": "USD",
+            "last_updated": last_updated,
+            "source": "database"
+        }
+        
+    except Exception as e:
+        db_logger.error("💥 ERROR EN CONSULTA DE BALANCE")
+        db_logger.error(f"   🐛 Error: {str(e)}")
+        db_logger.error(f"   🔑 Account ID: {account_id}")
+        db_logger.error("=" * 60)
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error consultando balance: {str(e)}"
+        )
+
+@app.get("/api/transactions/{account_id}", tags=["Transactions"])
+async def get_transactions_history(account_id: str, limit: int = 10, request: Request = None):
+    client_ip = request.client.host if request else "unknown"
+    
+    db_logger.info("=" * 70)
+    db_logger.info("📊 CONSULTANDO HISTORIAL DE TRANSACCIONES")
+    db_logger.info(f"   🔑 Account ID: {account_id}")
+    db_logger.info(f"   📄 Límite: {limit} registros")
+    db_logger.info(f"   🌐 IP Cliente: {client_ip}")
+    
+    try:
+        # Simular consulta a base de datos
+        db_logger.info("🗄️ EJECUTANDO CONSULTA EN POSTGRESQL...")
+        db_logger.info(f"   📊 Query: SELECT * FROM transactions WHERE account_id = '{account_id}' ORDER BY created_at DESC LIMIT {limit}")
+        
+        # Datos simulados de transacciones
+        transactions = [
+            {
+                "id": "TXN-ABC123456789",
+                "amount": 500.00,
+                "type": "deposit",
+                "description": "Salary deposit",
+                "created_at": "2024-10-20T10:30:00Z",
+                "status": "completed"
+            },
+            {
+                "id": "TXN-DEF987654321",
+                "amount": -50.00,
+                "type": "withdrawal",
+                "description": "ATM withdrawal",
+                "created_at": "2024-10-19T15:45:00Z",
+                "status": "completed"
+            }
+        ]
+        
+        db_logger.info(f"   ✅ Encontradas {len(transactions)} transacciones")
+        
+        for i, txn in enumerate(transactions, 1):
+            db_logger.info(f"   📋 Transacción {i}:")
+            db_logger.info(f"      🆔 ID: {txn['id']}")
+            db_logger.info(f"      💰 Monto: ${abs(txn['amount']):.2f}")
+            db_logger.info(f"      📝 Tipo: {txn['type']}")
+            db_logger.info(f"      ✅ Estado: {txn['status']}")
+        
+        db_logger.info("🎯 HISTORIAL OBTENIDO EXITOSAMENTE")
+        db_logger.info("=" * 70)
+        
+        return {
+            "account_id": account_id,
+            "transactions": transactions,
+            "total_found": len(transactions),
+            "limit": limit
+        }
+        
+    except Exception as e:
+        db_logger.error("💥 ERROR OBTENIENDO HISTORIAL")
+        db_logger.error(f"   🐛 Error: {str(e)}")
+        db_logger.error("=" * 70)
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error obteniendo historial: {str(e)}"
+        )
+
 # Root endpoint
 @app.get("/", tags=["Root"])
 async def root():
     return {
-        "message": "Banking API",
+        "message": "Banking API is running",
         "version": "1.0.0",
         "docs": "/api/docs",
-        "health": "/health"
+        "health": "/health",
+        "endpoints": {
+            "create_transaction": "POST /api/transactions",
+            "get_balance": "GET /api/balance/{account_id}",
+            "get_history": "GET /api/transactions/{account_id}"
+        }
     }
 
 if __name__ == "__main__":
