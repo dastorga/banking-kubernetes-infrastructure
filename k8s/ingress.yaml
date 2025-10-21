@@ -4,10 +4,8 @@ metadata:
   name: banking-ingress
   namespace: banking-app
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
@@ -17,15 +15,7 @@ spec:
     - host: banking.local
       http:
         paths:
-          # API routes - debe ir primero para tener prioridad
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: banking-backend
-                port:
-                  number: 8000
-          # Frontend routes - catch all
+          # Todo el tráfico pasa por el frontend que tiene el proxy configurado
           - path: /
             pathType: Prefix
             backend:
@@ -35,19 +25,14 @@ spec:
                   number: 80
     - http:
         paths:
-          # API routes sin host
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: banking-backend
-                port:
-                  number: 8000
-          # Frontend routes sin host
+          # Ruta por defecto sin host también va al frontend
           - path: /
             pathType: Prefix
             backend:
               service:
+                name: banking-frontend
+                port:
+                  number: 80
                 name: banking-frontend
                 port:
                   number: 80
