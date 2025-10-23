@@ -46,6 +46,41 @@ class BankingApp {
             });
         }
 
+        // Service Payment form
+        const servicePaymentForm = document.getElementById('servicePaymentForm');
+        if (servicePaymentForm) {
+            servicePaymentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleServicePayment();
+            });
+        }
+
+        // Deposit form
+        const depositForm = document.getElementById('depositForm');
+        if (depositForm) {
+            depositForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleDeposit();
+            });
+        }
+
+        // Withdrawal form
+        const withdrawalForm = document.getElementById('withdrawalForm');
+        if (withdrawalForm) {
+            withdrawalForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleWithdrawal();
+            });
+        }
+
+        // Account balance updates for withdrawal
+        const withdrawalAccount = document.getElementById('withdrawalAccount');
+        if (withdrawalAccount) {
+            withdrawalAccount.addEventListener('change', () => {
+                this.updateWithdrawalBalance();
+            });
+        }
+
         // Logout button
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -268,6 +303,38 @@ class BankingApp {
         if (creditAccount) {
             document.getElementById('creditBalance').textContent = this.formatCurrency(creditAccount.balance);
         }
+
+        // Load accounts into form selects
+        this.loadAccountOptions();
+    }
+
+    loadAccountOptions() {
+        const selects = [
+            'fromAccount',
+            'serviceAccount', 
+            'depositAccount',
+            'withdrawalAccount'
+        ];
+
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                // Clear existing options except the first placeholder
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                // Add account options (only non-credit accounts for most operations)
+                this.accounts.forEach(account => {
+                    if (account.type !== 'credit') {
+                        const option = document.createElement('option');
+                        option.value = account.id;
+                        option.textContent = `${account.name} (${account.accountNumber}) - ${this.formatCurrency(account.balance)}`;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        });
     }
 
     async updateRecentTransactions() {
@@ -381,13 +448,13 @@ class BankingApp {
                 this.navigateToSection('transactions');
                 break;
             case 'pay':
-                await this.quickTransaction('withdrawal', 25.00, 'Pago de servicios');
+                this.navigateToSection('services');
                 break;
             case 'deposit':
-                await this.quickTransaction('deposit', 500.00, 'Depósito rápido de demo');
+                this.navigateToSection('deposit');
                 break;
             case 'withdraw':
-                await this.quickTransaction('withdrawal', 100.00, 'Retiro de efectivo');
+                this.navigateToSection('withdraw');
                 break;
         }
     }
@@ -735,6 +802,165 @@ class BankingApp {
         }
     }
 
+    // Service Payment Handler
+    async handleServicePayment() {
+        const form = document.getElementById('servicePaymentForm');
+        const formData = new FormData(form);
+        
+        const paymentData = {
+            account_id: document.getElementById('serviceAccount').value,
+            service_provider: document.getElementById('serviceProvider').value,
+            service_type: document.getElementById('serviceType').value,
+            amount: parseFloat(document.getElementById('serviceAmount').value),
+            reference_number: document.getElementById('referenceNumber').value || null,
+            description: document.getElementById('serviceDescription').value || null
+        };
+
+        console.log('🏪 Procesando pago de servicio:', paymentData);
+
+        try {
+            this.setFormLoading('servicePaymentForm', true);
+            
+            const response = await this.apiCall('/pay-service', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                },
+                body: JSON.stringify(paymentData)
+            });
+
+            this.showToast('¡Pago de servicio procesado exitosamente!', 'success');
+            this.clearForm('servicePaymentForm');
+            await this.loadAccountBalances();
+            
+            console.log('✅ Pago completado:', response);
+        } catch (error) {
+            console.error('💥 Error en pago de servicio:', error);
+            this.showToast('Error al procesar el pago. Inténtalo de nuevo.', 'error');
+        } finally {
+            this.setFormLoading('servicePaymentForm', false);
+        }
+    }
+
+    // Deposit Handler
+    async handleDeposit() {
+        const depositData = {
+            account_id: document.getElementById('depositAccount').value,
+            amount: parseFloat(document.getElementById('depositAmount').value),
+            deposit_method: document.getElementById('depositMethod').value,
+            reference_number: document.getElementById('depositReference').value || null,
+            description: document.getElementById('depositDescription').value || null
+        };
+
+        console.log('💵 Procesando depósito:', depositData);
+
+        try {
+            this.setFormLoading('depositForm', true);
+            
+            const response = await this.apiCall('/deposit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                },
+                body: JSON.stringify(depositData)
+            });
+
+            this.showToast('¡Depósito procesado exitosamente!', 'success');
+            this.clearForm('depositForm');
+            await this.loadAccountBalances();
+            
+            console.log('✅ Depósito completado:', response);
+        } catch (error) {
+            console.error('💥 Error en depósito:', error);
+            this.showToast('Error al procesar el depósito. Inténtalo de nuevo.', 'error');
+        } finally {
+            this.setFormLoading('depositForm', false);
+        }
+    }
+
+    // Withdrawal Handler
+    async handleWithdrawal() {
+        const withdrawalData = {
+            account_id: document.getElementById('withdrawalAccount').value,
+            amount: parseFloat(document.getElementById('withdrawalAmount').value),
+            withdrawal_method: document.getElementById('withdrawalMethod').value,
+            description: document.getElementById('withdrawalDescription').value || null
+        };
+
+        console.log('💸 Procesando retiro:', withdrawalData);
+
+        try {
+            this.setFormLoading('withdrawalForm', true);
+            
+            const response = await this.apiCall('/withdraw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                },
+                body: JSON.stringify(withdrawalData)
+            });
+
+            this.showToast('¡Retiro procesado exitosamente!', 'success');
+            this.clearForm('withdrawalForm');
+            await this.loadAccountBalances();
+            this.updateWithdrawalBalance();
+            
+            console.log('✅ Retiro completado:', response);
+        } catch (error) {
+            console.error('💥 Error en retiro:', error);
+            this.showToast('Error al procesar el retiro. Inténtalo de nuevo.', 'error');
+        } finally {
+            this.setFormLoading('withdrawalForm', false);
+        }
+    }
+
+    // Update withdrawal balance display
+    updateWithdrawalBalance() {
+        const accountSelect = document.getElementById('withdrawalAccount');
+        const balanceDisplay = document.getElementById('withdrawalBalance');
+        
+        if (accountSelect && balanceDisplay && accountSelect.value) {
+            const account = this.accounts.find(acc => acc.id === accountSelect.value);
+            if (account) {
+                balanceDisplay.textContent = `$${account.balance.toFixed(2)}`;
+                balanceDisplay.className = 'balance-display';
+            }
+        }
+    }
+
+    // Utility functions
+    setFormLoading(formId, loading) {
+        const form = document.getElementById(formId);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        if (loading) {
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        }
+    }
+
+    clearForm(formId) {
+        const form = document.getElementById(formId);
+        form.reset();
+        
+        // Clear any validation states
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.classList.remove('form-success', 'form-error');
+        });
+    }
+
+    getAuthToken() {
+        // For demo purposes, return a mock token
+        return 'mock-jwt-token-demo';
+    }
+
     async checkApiHealth() {
         try {
             const response = await this.apiCall('/health');
@@ -743,6 +969,30 @@ class BankingApp {
         } catch (error) {
             console.warn('API not available, using mock data');
             return false;
+        }
+    }
+}
+
+// Global form clear functions
+function clearServiceForm() {
+    if (window.app) {
+        window.app.clearForm('servicePaymentForm');
+    }
+}
+
+function clearDepositForm() {
+    if (window.app) {
+        window.app.clearForm('depositForm');
+    }
+}
+
+function clearWithdrawalForm() {
+    if (window.app) {
+        window.app.clearForm('withdrawalForm');
+        // Reset balance display
+        const balanceDisplay = document.getElementById('withdrawalBalance');
+        if (balanceDisplay) {
+            balanceDisplay.textContent = '$0.00';
         }
     }
 }

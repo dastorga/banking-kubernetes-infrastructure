@@ -882,6 +882,197 @@ input:checked + .slider:before {
     }
 }
 
+/* Service Payment Styles */
+.service-payment-container,
+.deposit-container,
+.withdrawal-container {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.payment-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.payment-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.payment-form label {
+    margin-bottom: var(--spacing-2);
+    font-weight: 500;
+    color: var(--gray-700);
+    font-size: var(--font-size-sm);
+}
+
+.payment-form select,
+.payment-form input[type="text"],
+.payment-form input[type="number"] {
+    padding: var(--spacing-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-base);
+    transition: all 0.2s ease;
+    background: var(--white);
+}
+
+.payment-form select:focus,
+.payment-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.payment-form select option {
+    padding: var(--spacing-2);
+}
+
+/* Balance Display */
+.balance-display {
+    padding: var(--spacing-3);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+    color: var(--accent-color);
+    text-align: center;
+}
+
+/* Service Type Icons in Select */
+.payment-form select[id="serviceType"] option {
+    background: var(--white);
+    color: var(--gray-700);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    justify-content: flex-end;
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--gray-200);
+}
+
+.form-actions .btn {
+    min-width: 140px;
+}
+
+/* Enhanced Navigation */
+.nav ul {
+    display: flex;
+    gap: var(--spacing-2);
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    color: var(--gray-600);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+    background: var(--gray-100);
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+/* Service Type Specific Styling */
+.service-type-electricity { color: #fbbf24; }
+.service-type-water { color: #3b82f6; }
+.service-type-gas { color: #ef4444; }
+.service-type-phone { color: #8b5cf6; }
+.service-type-internet { color: #10b981; }
+.service-type-cable { color: #f59e0b; }
+.service-type-insurance { color: #6366f1; }
+.service-type-credit_card { color: #ec4899; }
+.service-type-loan { color: #84cc16; }
+.service-type-other { color: var(--gray-600); }
+
+/* Success/Error States */
+.form-success {
+    border-color: var(--success-color);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.form-error {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* Loading States */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Design for New Forms */
+@media (max-width: 768px) {
+    .payment-form .form-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-3);
+    }
+    
+    .nav ul {
+        justify-content: center;
+        gap: var(--spacing-1);
+    }
+    
+    .nav-link {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-2);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
 @media (max-width: 480px) {
     .container {
         padding: 0 var(--spacing-3);
@@ -891,11 +1082,24 @@ input:checked + .slider:before {
         padding: var(--spacing-4) 0;
     }
     
-    .transaction-form-container {
+    .transaction-form-container,
+    .service-payment-container,
+    .deposit-container,
+    .withdrawal-container {
         padding: var(--spacing-4);
     }
     
     .actions-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .nav ul {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .nav-link {
+        justify-content: center;
+        width: 100%;
     }
 }

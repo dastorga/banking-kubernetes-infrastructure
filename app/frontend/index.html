@@ -35,6 +35,15 @@
                     <li><a href="#transactions" class="nav-link" data-section="transactions">
                         <i class="fas fa-exchange-alt"></i> Transferencias
                     </a></li>
+                    <li><a href="#services" class="nav-link" data-section="services">
+                        <i class="fas fa-file-invoice-dollar"></i> Pagar Servicios
+                    </a></li>
+                    <li><a href="#deposit" class="nav-link" data-section="deposit">
+                        <i class="fas fa-plus-circle"></i> Depositar
+                    </a></li>
+                    <li><a href="#withdraw" class="nav-link" data-section="withdraw">
+                        <i class="fas fa-minus-circle"></i> Retirar
+                    </a></li>
                     <li><a href="#history" class="nav-link" data-section="history">
                         <i class="fas fa-history"></i> Historial
                     </a></li>
@@ -270,6 +279,196 @@
                             </label>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Service Payment Section -->
+        <section id="services" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-invoice-dollar"></i> Pagar Servicios</h2>
+                    <p>Paga tus servicios básicos de manera rápida y segura</p>
+                </div>
+
+                <div class="service-payment-container">
+                    <form id="servicePaymentForm" class="payment-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="serviceAccount">Cuenta a Debitar</label>
+                                <select id="serviceAccount" required>
+                                    <option value="">Seleccionar cuenta</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceType">Tipo de Servicio</label>
+                                <select id="serviceType" required>
+                                    <option value="">Seleccionar servicio</option>
+                                    <option value="electricity">⚡ Electricidad</option>
+                                    <option value="water">💧 Agua</option>
+                                    <option value="gas">🔥 Gas</option>
+                                    <option value="phone">📞 Teléfono</option>
+                                    <option value="internet">🌐 Internet</option>
+                                    <option value="cable">📺 Cable TV</option>
+                                    <option value="insurance">🛡️ Seguro</option>
+                                    <option value="credit_card">💳 Tarjeta de Crédito</option>
+                                    <option value="loan">🏦 Préstamo</option>
+                                    <option value="other">📋 Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="serviceProvider">Proveedor del Servicio</label>
+                                <input type="text" id="serviceProvider" placeholder="Ej: CFE, Telmex, Pemex" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceAmount">Monto a Pagar</label>
+                                <div class="amount-input">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="serviceAmount" step="0.01" min="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="referenceNumber">Número de Referencia</label>
+                                <input type="text" id="referenceNumber" placeholder="Número de factura o referencia">
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceDescription">Descripción</label>
+                                <input type="text" id="serviceDescription" placeholder="Descripción del pago">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="clearServiceForm()">Limpiar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-credit-card"></i> Pagar Servicio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deposit Section -->
+        <section id="deposit" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus-circle"></i> Depositar Dinero</h2>
+                    <p>Realiza depósitos a tu cuenta de manera segura</p>
+                </div>
+
+                <div class="deposit-container">
+                    <form id="depositForm" class="transaction-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="depositAccount">Cuenta de Destino</label>
+                                <select id="depositAccount" required>
+                                    <option value="">Seleccionar cuenta</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="depositMethod">Método de Depósito</label>
+                                <select id="depositMethod" required>
+                                    <option value="">Seleccionar método</option>
+                                    <option value="cash">💵 Efectivo</option>
+                                    <option value="check">📝 Cheque</option>
+                                    <option value="transfer">🔄 Transferencia</option>
+                                    <option value="atm">🏧 Cajero Automático</option>
+                                    <option value="mobile">📱 Depósito Móvil</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="depositAmount">Monto a Depositar</label>
+                                <div class="amount-input">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="depositReference">Número de Referencia</label>
+                                <input type="text" id="depositReference" placeholder="Número de cheque o referencia">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="depositDescription">Descripción</label>
+                            <input type="text" id="depositDescription" placeholder="Concepto del depósito">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="clearDepositForm()">Limpiar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Realizar Depósito
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Withdrawal Section -->
+        <section id="withdraw" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-minus-circle"></i> Retirar Dinero</h2>
+                    <p>Retira dinero de tu cuenta de forma segura</p>
+                </div>
+
+                <div class="withdrawal-container">
+                    <form id="withdrawalForm" class="transaction-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="withdrawalAccount">Cuenta de Origen</label>
+                                <select id="withdrawalAccount" required>
+                                    <option value="">Seleccionar cuenta</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdrawalMethod">Método de Retiro</label>
+                                <select id="withdrawalMethod" required>
+                                    <option value="">Seleccionar método</option>
+                                    <option value="cash">💵 Efectivo</option>
+                                    <option value="atm">🏧 Cajero Automático</option>
+                                    <option value="transfer">🔄 Transferencia</option>
+                                    <option value="check">📝 Cheque</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="withdrawalAmount">Monto a Retirar</label>
+                                <div class="amount-input">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="withdrawalAmount" step="0.01" min="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="availableBalance">Saldo Disponible</label>
+                                <div class="balance-display" id="withdrawalBalance">$0.00</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="withdrawalDescription">Descripción</label>
+                            <input type="text" id="withdrawalDescription" placeholder="Motivo del retiro">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="clearWithdrawalForm()">Limpiar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-minus-circle"></i> Realizar Retiro
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>

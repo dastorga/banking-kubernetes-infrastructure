@@ -103,6 +103,37 @@ class TransferRequest(BaseModel):
     amount: Decimal = Field(..., gt=0)
     description: Optional[str] = None
 
+class PayServiceRequest(BaseModel):
+    account_id: str
+    service_provider: str = Field(..., min_length=1, max_length=100)
+    service_type: str = Field(..., pattern="^(electricity|water|gas|phone|internet|cable|insurance|credit_card|loan|other)$")
+    amount: Decimal = Field(..., gt=0)
+    reference_number: Optional[str] = Field(None, max_length=50)
+    description: Optional[str] = Field(None, max_length=255)
+
+class DepositRequest(BaseModel):
+    account_id: str
+    amount: Decimal = Field(..., gt=0)
+    deposit_method: str = Field(..., pattern="^(cash|check|transfer|atm|mobile)$")
+    description: Optional[str] = Field(None, max_length=255)
+    reference_number: Optional[str] = Field(None, max_length=50)
+
+class WithdrawRequest(BaseModel):
+    account_id: str
+    amount: Decimal = Field(..., gt=0)
+    withdrawal_method: str = Field(..., pattern="^(cash|atm|transfer|check)$")
+    description: Optional[str] = Field(None, max_length=255)
+
+class ServicePayment(BaseModel):
+    id: Optional[str] = None
+    account_id: str
+    service_provider: str
+    service_type: str
+    amount: Decimal
+    reference_number: Optional[str] = None
+    status: str = Field(default="pending", pattern="^(pending|completed|failed)$")
+    created_at: Optional[datetime] = None
+
 # Authentication functions
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -170,6 +201,45 @@ async def init_db():
                 description TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed'))
+            )
+        ''')
+        
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS service_payments (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id UUID NOT NULL REFERENCES accounts(id),
+                service_provider VARCHAR(100) NOT NULL,
+                service_type VARCHAR(20) NOT NULL CHECK (service_type IN ('electricity', 'water', 'gas', 'phone', 'internet', 'cable', 'insurance', 'credit_card', 'loan', 'other')),
+                amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
+                reference_number VARCHAR(50),
+                description TEXT,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS deposits (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id UUID NOT NULL REFERENCES accounts(id),
+                amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
+                deposit_method VARCHAR(20) NOT NULL CHECK (deposit_method IN ('cash', 'check', 'transfer', 'atm', 'mobile')),
+                reference_number VARCHAR(50),
+                description TEXT,
+                status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS withdrawals (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id UUID NOT NULL REFERENCES accounts(id),
+                amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
+                withdrawal_method VARCHAR(20) NOT NULL CHECK (withdrawal_method IN ('cash', 'atm', 'transfer', 'check')),
+                description TEXT,
+                status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
 
@@ -552,6 +622,188 @@ async def get_transactions_history(account_id: str, limit: int = 10, request: Re
             detail=f"Error obteniendo historial: {str(e)}"
         )
 
+# Service Payment Endpoint
+@app.post("/api/pay-service", tags=["Services"])
+async def pay_service(payment: PayServiceRequest, username: str = Depends(verify_token)):
+    """Pay for services like electricity, water, gas, etc."""
+    db_logger = logging.getLogger("database.service_payment")
+    
+    try:
+        db_logger.info("💳 INICIANDO PAGO DE SERVICIO")
+        db_logger.info("=" * 70)
+        db_logger.info(f"   👤 Usuario: {username}")
+        db_logger.info(f"   🏪 Proveedor: {payment.service_provider}")
+        db_logger.info(f"   🔧 Tipo: {payment.service_type}")
+        db_logger.info(f"   💰 Monto: ${payment.amount:.2f}")
+        
+        async with db_pool.acquire() as conn:
+            # Verify account exists and has sufficient balance
+            account = await conn.fetchrow(
+                "SELECT id, balance FROM accounts WHERE id = $1",
+                payment.account_id
+            )
+            
+            if not account:
+                raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+            
+            if account['balance'] < payment.amount:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente")
+            
+            # Create service payment record
+            payment_id = await conn.fetchval('''
+                INSERT INTO service_payments 
+                (account_id, service_provider, service_type, amount, reference_number, description, status)
+                VALUES ($1, $2, $3, $4, $5, $6, 'completed')
+                RETURNING id
+            ''', payment.account_id, payment.service_provider, payment.service_type, 
+                payment.amount, payment.reference_number, payment.description)
+            
+            # Update account balance
+            new_balance = await conn.fetchval(
+                "UPDATE accounts SET balance = balance - $1 WHERE id = $2 RETURNING balance",
+                payment.amount, payment.account_id
+            )
+            
+            db_logger.info(f"   ✅ Pago procesado exitosamente")
+            db_logger.info(f"   🆔 ID Pago: {payment_id}")
+            db_logger.info(f"   💰 Nuevo saldo: ${new_balance:.2f}")
+            db_logger.info("=" * 70)
+            
+            return {
+                "payment_id": str(payment_id),
+                "status": "completed",
+                "service_provider": payment.service_provider,
+                "amount": payment.amount,
+                "new_balance": new_balance,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        db_logger.error(f"💥 ERROR EN PAGO DE SERVICIO: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error procesando pago: {str(e)}")
+
+# Deposit Endpoint
+@app.post("/api/deposit", tags=["Transactions"])
+async def deposit_money(deposit: DepositRequest, username: str = Depends(verify_token)):
+    """Deposit money into an account"""
+    db_logger = logging.getLogger("database.deposit")
+    
+    try:
+        db_logger.info("💵 INICIANDO DEPÓSITO")
+        db_logger.info("=" * 70)
+        db_logger.info(f"   👤 Usuario: {username}")
+        db_logger.info(f"   🏦 Cuenta: {deposit.account_id}")
+        db_logger.info(f"   💰 Monto: ${deposit.amount:.2f}")
+        db_logger.info(f"   📱 Método: {deposit.deposit_method}")
+        
+        async with db_pool.acquire() as conn:
+            # Verify account exists
+            account = await conn.fetchrow(
+                "SELECT id, balance FROM accounts WHERE id = $1",
+                deposit.account_id
+            )
+            
+            if not account:
+                raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+            
+            # Create deposit record
+            deposit_id = await conn.fetchval('''
+                INSERT INTO deposits 
+                (account_id, amount, deposit_method, reference_number, description, status)
+                VALUES ($1, $2, $3, $4, $5, 'completed')
+                RETURNING id
+            ''', deposit.account_id, deposit.amount, deposit.deposit_method, 
+                deposit.reference_number, deposit.description)
+            
+            # Update account balance
+            new_balance = await conn.fetchval(
+                "UPDATE accounts SET balance = balance + $1 WHERE id = $2 RETURNING balance",
+                deposit.amount, deposit.account_id
+            )
+            
+            db_logger.info(f"   ✅ Depósito procesado exitosamente")
+            db_logger.info(f"   🆔 ID Depósito: {deposit_id}")
+            db_logger.info(f"   💰 Nuevo saldo: ${new_balance:.2f}")
+            db_logger.info("=" * 70)
+            
+            return {
+                "deposit_id": str(deposit_id),
+                "status": "completed",
+                "amount": deposit.amount,
+                "method": deposit.deposit_method,
+                "new_balance": new_balance,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        db_logger.error(f"💥 ERROR EN DEPÓSITO: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error procesando depósito: {str(e)}")
+
+# Withdrawal Endpoint
+@app.post("/api/withdraw", tags=["Transactions"])
+async def withdraw_money(withdrawal: WithdrawRequest, username: str = Depends(verify_token)):
+    """Withdraw money from an account"""
+    db_logger = logging.getLogger("database.withdrawal")
+    
+    try:
+        db_logger.info("💸 INICIANDO RETIRO")
+        db_logger.info("=" * 70)
+        db_logger.info(f"   👤 Usuario: {username}")
+        db_logger.info(f"   🏦 Cuenta: {withdrawal.account_id}")
+        db_logger.info(f"   💰 Monto: ${withdrawal.amount:.2f}")
+        db_logger.info(f"   🏧 Método: {withdrawal.withdrawal_method}")
+        
+        async with db_pool.acquire() as conn:
+            # Verify account exists and has sufficient balance
+            account = await conn.fetchrow(
+                "SELECT id, balance FROM accounts WHERE id = $1",
+                withdrawal.account_id
+            )
+            
+            if not account:
+                raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+            
+            if account['balance'] < withdrawal.amount:
+                raise HTTPException(status_code=400, detail="Saldo insuficiente")
+            
+            # Create withdrawal record
+            withdrawal_id = await conn.fetchval('''
+                INSERT INTO withdrawals 
+                (account_id, amount, withdrawal_method, description, status)
+                VALUES ($1, $2, $3, $4, 'completed')
+                RETURNING id
+            ''', withdrawal.account_id, withdrawal.amount, withdrawal.withdrawal_method, withdrawal.description)
+            
+            # Update account balance
+            new_balance = await conn.fetchval(
+                "UPDATE accounts SET balance = balance - $1 WHERE id = $2 RETURNING balance",
+                withdrawal.amount, withdrawal.account_id
+            )
+            
+            db_logger.info(f"   ✅ Retiro procesado exitosamente")
+            db_logger.info(f"   🆔 ID Retiro: {withdrawal_id}")
+            db_logger.info(f"   💰 Nuevo saldo: ${new_balance:.2f}")
+            db_logger.info("=" * 70)
+            
+            return {
+                "withdrawal_id": str(withdrawal_id),
+                "status": "completed",
+                "amount": withdrawal.amount,
+                "method": withdrawal.withdrawal_method,
+                "new_balance": new_balance,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        db_logger.error(f"💥 ERROR EN RETIRO: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error procesando retiro: {str(e)}")
+
 # Root endpoint
 @app.get("/", tags=["Root"])
 async def root():
@@ -563,7 +815,10 @@ async def root():
         "endpoints": {
             "create_transaction": "POST /api/transactions",
             "get_balance": "GET /api/balance/{account_id}",
-            "get_history": "GET /api/transactions/{account_id}"
+            "get_history": "GET /api/transactions/{account_id}",
+            "pay_service": "POST /api/pay-service",
+            "deposit": "POST /api/deposit",
+            "withdraw": "POST /api/withdraw"
         }
     }
 
